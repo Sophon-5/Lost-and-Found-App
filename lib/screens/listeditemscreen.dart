@@ -6,8 +6,6 @@ import '../models/found_item.dart';
 class ListedItemsScreen extends StatefulWidget {
   const ListedItemsScreen({super.key});
 
-  static const String routeName = '/listed-items';
-
   @override
   State<ListedItemsScreen> createState() => _ListedItemsScreenState();
 }
@@ -21,10 +19,20 @@ class _ListedItemsScreenState extends State<ListedItemsScreen> {
     _futureItems = FoundItemRepository.instance.getAll();
   }
 
-  Future<void> _refresh() async {
+  Future<void> _reload() async {
     setState(() {
       _futureItems = FoundItemRepository.instance.getAll();
     });
+  }
+
+  Future<void> _markClaimed(FoundItem item) async {
+    await FoundItemRepository.instance.delete(item.id);
+    if (mounted) {
+      _reload();
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Item marked as claimed')),
+      );
+    }
   }
 
   @override
@@ -40,7 +48,7 @@ class _ListedItemsScreenState extends State<ListedItemsScreen> {
       body: SafeArea(
         child: FutureBuilder<List<FoundItem>>(
           future: _futureItems,
-          builder: (context, snapshot) {
+          builder: (BuildContext context, AsyncSnapshot<List<FoundItem>> snapshot) {
             if (snapshot.connectionState != ConnectionState.done) {
               return const Center(child: CircularProgressIndicator());
             }
@@ -54,15 +62,18 @@ class _ListedItemsScreenState extends State<ListedItemsScreen> {
               );
             }
             return RefreshIndicator(
-              onRefresh: _refresh,
+              onRefresh: _reload,
               child: ListView.separated(
                 padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-                itemBuilder: (context, index) {
-                  final FoundItem item = items[index];
-                  return _FoundItemCard(item: item);
-                },
-                separatorBuilder: (_, __) => const SizedBox(height: 12),
                 itemCount: items.length,
+                separatorBuilder: (_, __) => const SizedBox(height: 12),
+                itemBuilder: (BuildContext context, int index) {
+                  final FoundItem item = items[index];
+                  return _FoundItemCard(
+                    item: item,
+                    onClaimed: () => _markClaimed(item),
+                  );
+                },
               ),
             );
           },
@@ -74,7 +85,9 @@ class _ListedItemsScreenState extends State<ListedItemsScreen> {
 
 class _FoundItemCard extends StatelessWidget {
   final FoundItem item;
-  const _FoundItemCard({required this.item});
+  final VoidCallback onClaimed;
+
+  const _FoundItemCard({required this.item, required this.onClaimed});
 
   @override
   Widget build(BuildContext context) {
@@ -83,7 +96,7 @@ class _FoundItemCard extends StatelessWidget {
         color: Colors.white,
         borderRadius: BorderRadius.circular(12),
         border: Border.all(color: Colors.grey.shade300, width: 1),
-        boxShadow: [
+        boxShadow: <BoxShadow>[
           BoxShadow(
             color: Colors.black.withOpacity(0.03),
             blurRadius: 8,
@@ -94,7 +107,7 @@ class _FoundItemCard extends StatelessWidget {
       padding: const EdgeInsets.all(12),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
+        children: <Widget>[
           Container(
             width: 72,
             height: 72,
@@ -108,7 +121,7 @@ class _FoundItemCard extends StatelessWidget {
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
+              children: <Widget>[
                 Text(
                   item.title,
                   style: const TextStyle(fontWeight: FontWeight.w700),
@@ -123,7 +136,7 @@ class _FoundItemCard extends StatelessWidget {
                   ),
                 const SizedBox(height: 6),
                 Row(
-                  children: [
+                  children: <Widget>[
                     const Icon(Icons.place_outlined, size: 16, color: Colors.black54),
                     const SizedBox(width: 4),
                     Expanded(
@@ -135,13 +148,22 @@ class _FoundItemCard extends StatelessWidget {
                     ),
                   ],
                 ),
+                const SizedBox(height: 6),
+                TextButton(
+                  onPressed: onClaimed,
+                  style: TextButton.styleFrom(
+                    padding: EdgeInsets.zero,
+                    foregroundColor: const Color(0xFF27AE60),
+                  ),
+                  child: const Text('Mark as claimed'),
+                ),
               ],
             ),
           ),
           const SizedBox(width: 8),
           Column(
             crossAxisAlignment: CrossAxisAlignment.end,
-            children: [
+            children: <Widget>[
               Text(item.date, style: const TextStyle(fontSize: 12, color: Colors.black87)),
               Text(item.time, style: const TextStyle(fontSize: 12, color: Colors.black54)),
             ],

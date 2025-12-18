@@ -8,7 +8,9 @@ plugins {
 android {
     namespace = "com.example.lostandfound"
     compileSdk = flutter.compileSdkVersion
-    ndkVersion = flutter.ndkVersion
+    // Explicitly set NDK version to satisfy plugins (flutter_plugin_android_lifecycle,
+    // image_picker_android, shared_preferences_android)
+    ndkVersion = "27.0.12077973"
 
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_11

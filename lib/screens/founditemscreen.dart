@@ -248,7 +248,7 @@ class _FoundItemScreenState extends State<FoundItemScreen> {
                         );
                         FoundItemRepository.instance.add(item).then((_) {
                           Navigator.of(context).push(
-                          MaterialPageRoute(builder: (_) => const SubmittedScreen()),
+                            MaterialPageRoute(builder: (_) => const SubmittedScreen()),
                           );
                         });
                       }

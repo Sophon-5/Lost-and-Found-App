@@ -24,15 +24,19 @@ class FoundItemRepository {
 
   Future<void> add(FoundItem item) async {
     final SharedPreferences prefs = await SharedPreferences.getInstance();
-    final List<FoundItem> existing = await getAll();
-    final List<FoundItem> updated = <FoundItem>[...existing.reversed, item];
-    final String raw = jsonEncode(updated.map((e) => e.toJson()).toList());
-    await prefs.setString(_storageKey, raw);
+    final String? raw = prefs.getString(_storageKey);
+    final List<dynamic> list = raw == null || raw.isEmpty ? <dynamic>[] : jsonDecode(raw) as List<dynamic>;
+    list.add(item.toJson());
+    await prefs.setString(_storageKey, jsonEncode(list));
   }
 
-  Future<void> clearAll() async {
+  Future<void> delete(String id) async {
     final SharedPreferences prefs = await SharedPreferences.getInstance();
-    await prefs.remove(_storageKey);
+    final String? raw = prefs.getString(_storageKey);
+    if (raw == null || raw.isEmpty) return;
+    final List<dynamic> list = jsonDecode(raw) as List<dynamic>;
+    list.removeWhere((dynamic e) => (e as Map)['id'] == id);
+    await prefs.setString(_storageKey, jsonEncode(list));
   }
 }
 
